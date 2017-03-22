@@ -34,109 +34,145 @@
 # THE SOFTWARE.
 import RPi.GPIO as GPIO
 import time
-import sys
-
-GPIO.setmode(GPIO.BCM)
-
-CLOCK = 26
-ROW = [21, 20, 16]
-COL = [19, 13]
-
-def setup():
-    GPIO.setup(CLOCK, GPIO.OUT, initial=GPIO.LOW)
-    for row in ROW:
-        GPIO.setup(row, GPIO.OUT, initial=GPIO.LOW)
-    for col in COL:
-        GPIO.setup(col, GPIO.OUT, initial=GPIO.LOW)
-
-def LOW():
-    GPIO.output(CLOCK, GPIO.LOW)
-
-    for row in ROW:
-        GPIO.output(row, GPIO.LOW)
-    for col in COL:
-        GPIO.output(col, GPIO.LOW)
-
-def commit():
-    GPIO.output(CLOCK, GPIO.HIGH)
-    time.sleep(0.5)
-    GPIO.output(CLOCK, GPIO.LOW)
-    LOW()
 
 
-def reject(bad_position):
-    print("%s is not a valid character" % bad_position)
+class Merch:
+    '''Merch Hardware Controller'''
+    CLOCK = 26
+    ROW = [21, 20, 16]
+    COL = [19, 13]
+    MAX_LETTER = 'F'
+    MAX_NUMBER = '0'
 
-def main():
-    char = sys.argv[1][0]
-    num = sys.argv[1][1]
-    
-    setup()
-    LOW()
-    commit()
+    def __init__(self, debug=False):
+        self.debug = debug
 
-    vend(char, int(num))
-    GPIO.cleanup()
+        self.__setup()
+        self.__low()
+        self.__commit()
 
-def vend(letter, number):
-    # Set the letter
-    binary = ord(letter) - ord('A')
-    if(binary & 0b100):
-        GPIO.output(ROW[0], GPIO.HIGH)
-    if(binary & 0b010):
-        GPIO.output(ROW[1], GPIO.HIGH)
-    if(binary & 0b001):
-        GPIO.output(ROW[2], GPIO.HIGH)
+    def __del__(self):
+        self.__cleanup()
 
-    GPIO.output(COL[0], GPIO.HIGH)
-    GPIO.output(COL[1], GPIO.HIGH)
+    def __cleanup(self):
+        ''' Clean up all of the GPIO pins '''
+        GPIO.cleanup()
 
-    commit()
+    def __setup(self):
+        ''' Setup all of the GPIO pins '''
+        GPIO.setmode(GPIO.BCM)
 
-    # Set the number
-    row = int((number-1) / 2)
-    col = (number+1) % 2+1
+        GPIO.setup(self.CLOCK, GPIO.OUT, initial=GPIO.LOW)
+        for row in self.ROW:
+            GPIO.setup(row, GPIO.OUT, initial=GPIO.LOW)
+        for col in self.COL:
+            GPIO.setup(col, GPIO.OUT, initial=GPIO.LOW)
 
-    if(col & 0b01):
-        GPIO.output(COL[1], GPIO.HIGH)
-    if(col & 0b10):
-        GPIO.output(COL[0], GPIO.HIGH)
+    def __low(self):
+        ''' Writes all outputs to low. Does not commit them '''
+        GPIO.output(self.CLOCK, GPIO.LOW)
 
-    print(row, col)
+        for row in self.ROW:
+            GPIO.output(row, GPIO.LOW)
+        for col in self.COL:
+            GPIO.output(col, GPIO.LOW)
 
-    if(row & 0x100):
-        GPIO.output(ROW[0], GPIO.HIGH)
-    if(row & 0b010):
-        GPIO.output(ROW[1], GPIO.HIGH)
-    if(row & 0b001):
-        GPIO.output(ROW[2], GPIO.HIGH)
+    def __commit(self):
+        '''
+        Clocks the flip flop that gates the output
+        '''
+        GPIO.output(self.CLOCK, GPIO.HIGH)
+        time.sleep(0.5)
+        GPIO.output(self.CLOCK, GPIO.LOW)
+        self.__low()
 
-    commit()
-    commit()
+    # Wrap the base _vend function, which doesn't check arguments
+    def vend(self, letter, number):
+        ''' Presses the keypad with letter, number'''
+        char = 0
+        try:
+            char = ord(letter)
+        except TypeError:
+            raise TypeError('Letter %s does not represent a character' %
+                            str(letter))
 
+        # Maybe we should use the actual keypad value?
+        if char < ord('A') or char > ord('Z'):
+            raise ValueError('Invalid Letter: %s' % str(letter))
 
-# TABLE OF OUTPUTS
-# ROW = {ROW[0],ROW[1],ROW[2]}
-# COL = {COL[0], COL[1]}
-# ROW   COL    OUTPUT
-# 000   11     A
-# 000   01     1
-# 000   10     2
-# 001   11     B
-# 001   01     3
-# 001   10     4
-# 010   11     C
-# 010   01     5
-# 010   10     6
-# 011   11     D
-# 011   01     7
-# 011   10     8
-# 100   11     E
-# 100   01     9
-# 100   10     0
-# 101   11     F
-# 101   01     *
-# 101   10     CLR
+        num = 0
+        try:
+            num = int(number)
+        except TypeError:
+            raise TypeError('Number %s is not convertible to an integer' %
+                            str(num))
 
-if __name__ == "__main__":
-    main()
+        if num < 0 or num > 10:
+            raise ValueError('Number %d is not in the range 1-10' % num)
+
+        self.__vend(letter, number)
+
+    def __vend(self, letter, number):
+        ''' Base vending function that handles GPIO's
+
+        Arguments:
+        letter -- the letter as a length 1 string
+        number -- the number as an integer between 1-10
+        '''
+        # TABLE OF OUTPUTS
+        # ROW = {ROW[0],ROW[1],ROW[2]}
+        # COL = {COL[0], COL[1]}
+        # ROW   COL    OUTPUT
+        # 000   11     A
+        # 000   01     1
+        # 000   10     2
+        # 001   11     B
+        # 001   01     3
+        # 001   10     4
+        # 010   11     C
+        # 010   01     5
+        # 010   10     6
+        # 011   11     D
+        # 011   01     7
+        # 011   10     8
+        # 100   11     E
+        # 100   01     9
+        # 100   10     0
+        # 101   11     F
+        # 101   01     *
+        # 101   10     CLR
+
+        binary = ord(letter) - ord('A')
+        if binary & 0b100:
+            GPIO.output(self.ROW[0], GPIO.HIGH)
+        if binary & 0b010:
+            GPIO.output(self.ROW[1], GPIO.HIGH)
+        if binary & 0b001:
+            GPIO.output(self.ROW[2], GPIO.HIGH)
+
+        GPIO.output(self.ROW[0], GPIO.HIGH)
+        GPIO.output(self.ROW[1], GPIO.HIGH)
+
+        self.__commit()
+
+        # Set the number
+        row = int((number-1) / 2)
+        col = (number+1) % 2+1
+
+        if self.debug:
+            print("Vending", row, col)
+
+        if col & 0b01:
+            GPIO.output(self.ROW[1], GPIO.HIGH)
+        if col & 0b10:
+            GPIO.output(self.ROW[0], GPIO.HIGH)
+
+        if row & 0x100:
+            GPIO.output(self.ROW[0], GPIO.HIGH)
+        if row & 0b010:
+            GPIO.output(self.ROW[1], GPIO.HIGH)
+        if row & 0b001:
+            GPIO.output(self.ROW[2], GPIO.HIGH)
+
+        self.__commit()
+        self.__commit()
