@@ -150,8 +150,8 @@ class Merch:
         if binary & 0b001:
             GPIO.output(self.ROW[2], GPIO.HIGH)
 
-        GPIO.output(self.ROW[0], GPIO.HIGH)
-        GPIO.output(self.ROW[1], GPIO.HIGH)
+        GPIO.output(self.COL[0], GPIO.HIGH)
+        GPIO.output(self.COL[1], GPIO.HIGH)
 
         self.__commit()
 
@@ -163,9 +163,9 @@ class Merch:
             print("Vending", row, col)
 
         if col & 0b01:
-            GPIO.output(self.ROW[1], GPIO.HIGH)
+            GPIO.output(self.COL[1], GPIO.HIGH)
         if col & 0b10:
-            GPIO.output(self.ROW[0], GPIO.HIGH)
+            GPIO.output(self.COL[0], GPIO.HIGH)
 
         if row & 0x100:
             GPIO.output(self.ROW[0], GPIO.HIGH)
