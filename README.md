@@ -1,6 +1,8 @@
 # SIGBot-FA2017
 
 
+[![Join the chat at https://gitter.im/acm-uiuc/merch-development](https://badges.gitter.im/acm-uiuc/merch-development.svg)](https://gitter.im/acm-uiuc/merch-development?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Possible information sources:
 [http://bajavending.com/Manual-de-Operacion-BevMax.pdf](http://bajavending.com/Manual-de-Operacion-BevMax.pdf)
 * Has the right picture of the main controller board, no programming information though
