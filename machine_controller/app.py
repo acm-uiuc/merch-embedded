@@ -39,7 +39,7 @@ token_attr, token_value = open('.env', 'r').read().split("=")
 token_value = token_value[:-1]
 
 app = Flask(__name__)
-merch = Merch()
+merch = Merch.Instance()
 
 @app.route('/vend', methods=['POST'])
 def hello_world():
