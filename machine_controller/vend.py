@@ -110,15 +110,20 @@ class Merch:
         if num < 0 or num > 10:
             raise ValueError('Number %d is not in the range 1-10' % num)
 
-        self.__vend(letter, number)
+        self.__vend(letter, str(number))
 
     def __vend(self, letter, number):
         ''' Base vending function that handles GPIO's
 
         Arguments:
         letter -- the letter as a length 1 string
-        number -- the number as an integer between 1-10
+        number -- the digit as a string between 0-10
         '''
+        self.__sendKey(letter)
+        self.__sendKey(number)
+        self.__commit()
+
+    def __sendKey(self, key):
         # TABLE OF OUTPUTS
         # ROW = {ROW[0],ROW[1],ROW[2]}
         # COL = {COL[0], COL[1]}
@@ -142,37 +147,44 @@ class Merch:
         # 101   01     *
         # 101   10     CLR
 
-        binary = ord(letter) - ord('A')
-        if binary & 0b100:
+        keys = {
+                'A':   (0b000, 0b011),
+                'B':   (0b001, 0b011),
+                'C':   (0b010, 0b011),
+                'D':   (0b011, 0b011),
+                'E':   (0b100, 0b011),
+                'F':   (0b101, 0b011),
+
+                '1':   (0b000, 0b001),
+                '2':   (0b000, 0b010),
+                '3':   (0b001, 0b001),
+                '4':   (0b001, 0b010),
+                '5':   (0b010, 0b001),
+                '6':   (0b010, 0b010),
+                '7':   (0b011, 0b001),
+                '8':   (0b011, 0b010),
+                '9':   (0b100, 0b001),
+                '0':   (0b100, 0b010),
+                '*':   (0b100, 0b001),
+                'CLR': (0b100, 0b010),
+        }
+
+        letter_key = keys[key]
+        if letter_key[0] & 0b100:
             GPIO.output(self.ROW[0], GPIO.HIGH)
-        if binary & 0b010:
+        if letter_key[0] & 0b010:
             GPIO.output(self.ROW[1], GPIO.HIGH)
-        if binary & 0b001:
+        if letter_key[0] & 0b001:
             GPIO.output(self.ROW[2], GPIO.HIGH)
 
-        GPIO.output(self.COL[0], GPIO.HIGH)
-        GPIO.output(self.COL[1], GPIO.HIGH)
-
-        self.__commit()
-
-        # Set the number
-        row = int((number-1) / 2)
-        col = (number+1) % 2+1
+        if letter_key[1] & 0b10:
+            GPIO.output(self.COL[0], GPIO.HIGH)
+        if letter_key[1] & 0b01:
+            GPIO.output(self.COL[1], GPIO.HIGH)
 
         if self.debug:
-            print("Vending", row, col)
-
-        if col & 0b01:
-            GPIO.output(self.COL[1], GPIO.HIGH)
-        if col & 0b10:
-            GPIO.output(self.COL[0], GPIO.HIGH)
-
-        if row & 0x100:
-            GPIO.output(self.ROW[0], GPIO.HIGH)
-        if row & 0b010:
-            GPIO.output(self.ROW[1], GPIO.HIGH)
-        if row & 0b001:
-            GPIO.output(self.ROW[2], GPIO.HIGH)
+            print('Vending', letter_key[0], letter_key[1])
 
         self.__commit()
-        self.__commit()
+
+

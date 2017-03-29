@@ -35,19 +35,22 @@
 from flask import Flask, request, abort, jsonify
 import json
 from vend import Merch
+token_attr, token_value = open('.env', 'r').read().split("=")
+token_value = token_value[:-1]
 
 app = Flask(__name__)
 merch = Merch()
 
-
 @app.route('/vend', methods=['POST'])
 def hello_world():
+    if request.headers.get('TOKEN', '') != token_value:
+        abort(401)
     if 'item' not in request.args:
         abort(400)
     item = request.args['item']
-    merch.vend(item[0], item[1])
+    merch.vend(item[0], int(item[1]))
     return json.dumps({'success': True}), 200, {'ContentType': 'application/json'}
 
-
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')
+
