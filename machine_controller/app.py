@@ -45,11 +45,11 @@ merch = Merch()
 def hello_world():
     if request.headers.get('TOKEN', '') != token_value:
         abort(401)
-    if 'item' not in request.args:
-        abort(400)
-    item = request.args['item']
-    merch.vend(item[0], int(item[1]))
-    return json.dumps({'success': True}), 200, {'ContentType': 'application/json'}
+    data = request.json()
+    items = data['items']
+    for item in items:
+        merch.vend(item[0], int(item[1]))
+    return jsonify(success=True)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
