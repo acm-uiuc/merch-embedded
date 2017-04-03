@@ -47,10 +47,18 @@ def hello_world():
         abort(401)
     data = request.json()
     items = data['items']
-    for item in items:
-        merch.vend(item[0], int(item[1]))
+
+    for i, item in enumerate(items):
+        try:
+            merch.vend(item[0], int(item[1]))
+        except:
+            # Some error occurred, return the first index that failed
+            return jsonify(success=False, failed=i)
+
     return jsonify(success=True)
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    # Make sure flask runs in a single thread. Otherwise concurrent requests
+    # may cause problems with vending
+    app.run(debug=True, host='0.0.0.0', threaded=False)
 
