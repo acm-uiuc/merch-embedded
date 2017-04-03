@@ -44,6 +44,11 @@ class Merch:
     MAX_LETTER = 'F'
     MAX_NUMBER = '0'
 
+    class VendError(Exception):
+        pass
+
+    InvalidLocationError = VendError("Invalid location")
+
     def __init__(self, debug=False):
         self.debug = debug
 
@@ -93,22 +98,24 @@ class Merch:
         try:
             char = ord(letter)
         except TypeError:
-            raise TypeError('Letter %s does not represent a character' %
-                            str(letter))
+            raise Merch.VendError("Invalid location: %s" %
+                                  (str(letter) + str(number)))
 
         # Maybe we should use the actual keypad value?
         if char < ord('A') or char > ord('Z'):
-            raise ValueError('Invalid Letter: %s' % str(letter))
+            raise Merch.VendError("Invalid location: %s" %
+                                  (str(letter) + str(number)))
 
         num = 0
         try:
             num = int(number)
         except TypeError:
-            raise TypeError('Number %s is not convertible to an integer' %
-                            str(num))
+            raise Merch.VendError("Invalid location: %s" %
+                                  (str(letter) + str(number)))
 
         if num < 0 or num > 10:
-            raise ValueError('Number %d is not in the range 1-10' % num)
+            raise Merch.VendError("Invalid location: %s" %
+                                  (str(letter) + str(number)))
 
         self.__vend(letter, str(number))
 

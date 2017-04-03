@@ -47,15 +47,23 @@ def hello_world():
         abort(401)
     data = request.json()
     items = data['items']
+    transaction_id = data['transaction_id']
 
+
+    statuses = []
     for i, item in enumerate(items):
         try:
             merch.vend(item[0], int(item[1]))
-        except:
-            # Some error occurred, return the first index that failed
-            return jsonify(success=False, failed=i)
+            statuses.append({'error': None, 'location': item})
 
-    return jsonify(success=True)
+        except Exception as e:
+            # Some error occurred while vending
+            # I'd prefer to catch Merch.VendError's only, but if something else
+            # goes wrong, we still need to let the client know instead of
+            # throwing a 500
+            statuses.append({'error': str(e), 'location': item})
+
+    return jsonify(transaction_id=transaction_id, items=statuses)
 
 if __name__ == '__main__':
     # Make sure flask runs in a single thread. Otherwise concurrent requests
