@@ -32,72 +32,92 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS WITH
 # THE SOFTWARE.
-import RPi.GPIO as GPIO
+try:
+    import RPi.GPIO as rpi_GPIO
+except (ImportError, RuntimeError):
+    from mockgpio import GPIO as rpi_GPIO
+
 import time
+from functools import partial
+import threading
+
+from task_queue import TaskQueue
+
+from singleton import Singleton
 
 
+@Singleton
 class Merch:
     '''Merch Hardware Controller'''
-    CLOCK = 26
+    GATE = 26
     ROW = [21, 20, 16]
     COL = [19, 13]
     MAX_LETTER = 'F'
-    MAX_NUMBER = '0'
+    MAX_NUMBER = 10
 
-    def __init__(self, debug=False):
-        self.debug = debug
+    debug = False
+    testing = False
+
+    def __init__(self, GPIO=rpi_GPIO):
+        self.GPIO = GPIO
+        self.promises = []
 
         self.__setup()
         self.__low()
         self.__commit()
 
+        self.queue = TaskQueue()
+        self.queue.start()
+
     def __del__(self):
         self.__cleanup()
+        self.queue.shutdown()
+        self.queue.join()
 
     def __cleanup(self):
         ''' Clean up all of the GPIO pins '''
-        GPIO.cleanup()
+        self.GPIO.cleanup()
 
     def __setup(self):
         ''' Setup all of the GPIO pins '''
-        GPIO.setmode(GPIO.BCM)
+        self.GPIO.setmode(self.GPIO.BCM)
 
-        GPIO.setup(self.CLOCK, GPIO.OUT, initial=GPIO.LOW)
-        for row in self.ROW:
-            GPIO.setup(row, GPIO.OUT, initial=GPIO.LOW)
-        for col in self.COL:
-            GPIO.setup(col, GPIO.OUT, initial=GPIO.LOW)
+        self.GPIO.setup([self.GATE] + self.ROW + self.COL, self.GPIO.OUT,
+                        initial=self.GPIO.LOW)
 
     def __low(self):
         ''' Writes all outputs to low. Does not commit them '''
-        GPIO.output(self.CLOCK, GPIO.LOW)
+        self.GPIO.output([self.GATE] + self.ROW + self.COL, self.GPIO.LOW)
 
-        for row in self.ROW:
-            GPIO.output(row, GPIO.LOW)
-        for col in self.COL:
-            GPIO.output(col, GPIO.LOW)
 
     def __commit(self):
         '''
         Clocks the flip flop that gates the output
         '''
-        GPIO.output(self.CLOCK, GPIO.HIGH)
-        time.sleep(0.5)
-        GPIO.output(self.CLOCK, GPIO.LOW)
+        self.GPIO.output(self.GATE, self.GPIO.HIGH)
+        if not self.testing:
+            time.sleep(0.5)
+        self.GPIO.output(self.GATE, self.GPIO.LOW)
         self.__low()
+
+    def wait(self):
+        '''Wait for all vends to complete'''
+        for promise in self.promises:
+            promise.wait()
 
     # Wrap the base _vend function, which doesn't check arguments
     def vend(self, letter, number):
         ''' Presses the keypad with letter, number'''
-        char = 0
         try:
             char = ord(letter)
         except TypeError:
             raise TypeError('Letter %s does not represent a character' %
                             str(letter))
 
+        char = ord(letter.upper())
+
         # Maybe we should use the actual keypad value?
-        if char < ord('A') or char > ord('Z'):
+        if char < ord('A') or char > ord(self.MAX_LETTER):
             raise ValueError('Invalid Letter: %s' % str(letter))
 
         num = 0
@@ -110,7 +130,11 @@ class Merch:
         if num < 0 or num > 10:
             raise ValueError('Number %d is not in the range 1-10' % num)
 
-        self.__vend(letter, str(number))
+        func = partial(self.__vend, letter, num)
+
+        # Non blocking add to work queue
+        promise = self.queue.add_work(func)
+        self.promises.append(promise)
 
     def __vend(self, letter, number):
         ''' Base vending function that handles GPIO's
@@ -146,6 +170,7 @@ class Merch:
         # 101   11     F
         # 101   01     *
         # 101   10     CLR
+
 
         keys = {
                 'A':   (0b000, 0b011),
@@ -186,5 +211,3 @@ class Merch:
             print('Vending', letter_key[0], letter_key[1])
 
         self.__commit()
-
-
