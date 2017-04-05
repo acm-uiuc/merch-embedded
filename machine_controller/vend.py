@@ -42,7 +42,7 @@ class Merch:
     ROW = [21, 20, 16]
     COL = [19, 13]
     MAX_LETTER = 'F'
-    MAX_NUMBER = '0'
+    MAX_NUMBER = 9
 
     class VendError(Exception):
         pass
@@ -101,7 +101,7 @@ class Merch:
             raise self.InvalidLocationError
 
         # Maybe we should use the actual keypad value?
-        if char < ord('A') or char > ord('Z'):
+        if char < ord('A') or char > ord(self.MAX_LETTER):
             raise self.InvalidLocationError
 
         num = 0
@@ -110,7 +110,7 @@ class Merch:
         except TypeError:
             raise self.InvalidLocationError
 
-        if num < 0 or num > 10:
+        if num < 1 or num > MAX_NUMBER:
             raise self.InvalidLocationError
 
         self.__vend(letter, str(number))
