@@ -43,7 +43,7 @@ merch = Merch()
 
 @app.route('/vend', methods=['POST'])
 def hello_world():
-    if request.headers.get('TOKEN', '') != token_value:
+    if request.headers.get('Authorization', '') != token_value:
         abort(401)
     data = request.json()
     items = data['items']
