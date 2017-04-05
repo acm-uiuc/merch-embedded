@@ -8,11 +8,12 @@ Merch runs an embedded webserver that can be accessed at merch.acm.illinois.edu.
 
 ## API
 
-Every request through the API has a token in the header that is unique to groot.
-This way, only groot can make requests to vend things.
-The token is stored in the request header.
+Requests to the device must contain a valid token in the Authorization Header for a request to be processed.
+As of now the only token will be given solely to the groot merch service, so if you wish to make merch requests go through groot.
+
 
 ### Vend a location
+
 To vend a list of items, POST a request to `/vend`.
 The request is of the form
 ```json

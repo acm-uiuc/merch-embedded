@@ -98,24 +98,20 @@ class Merch:
         try:
             char = ord(letter)
         except TypeError:
-            raise Merch.VendError("Invalid location: %s" %
-                                  (str(letter) + str(number)))
+            raise self.InvalidLocationError
 
         # Maybe we should use the actual keypad value?
         if char < ord('A') or char > ord('Z'):
-            raise Merch.VendError("Invalid location: %s" %
-                                  (str(letter) + str(number)))
+            raise self.InvalidLocationError
 
         num = 0
         try:
             num = int(number)
         except TypeError:
-            raise Merch.VendError("Invalid location: %s" %
-                                  (str(letter) + str(number)))
+            raise self.InvalidLocationError
 
         if num < 0 or num > 10:
-            raise Merch.VendError("Invalid location: %s" %
-                                  (str(letter) + str(number)))
+            raise self.InvalidLocationError
 
         self.__vend(letter, str(number))
 
