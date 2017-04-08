@@ -51,6 +51,7 @@ def vend():
 
 
     statuses = []
+    merch.acquire()
     for i, item in enumerate(items):
         try:
             merch.vend(item[0], int(item[1]))
@@ -62,11 +63,24 @@ def vend():
             # goes wrong, we still need to let the client know instead of
             # throwing a 500
             statuses.append({'error': str(e), 'location': item})
+    merch.release()
 
     return jsonify(transaction_id=transaction_id, items=statuses)
 
-if __name__ == '__main__':
-    # Make sure flask runs in a single thread. Otherwise concurrent requests
-    # may cause problems with vending
-    app.run(debug=True, host='0.0.0.0', threaded=False)
+@app.route('/status', methods=['GET'])
+def status():
+    if request.headers.get('Authorization', '') != token_value:
+        abort(401)
 
+    notready = merch.inUse()
+
+    if(notready):
+        return ('', 503)
+    else:
+        # 200 to indicate success
+        return ('', 200)
+
+
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', threaded=True)

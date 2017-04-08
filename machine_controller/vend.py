@@ -34,6 +34,7 @@
 # THE SOFTWARE.
 import RPi.GPIO as GPIO
 import time
+from threading import Condition, Lock
 
 
 class Merch:
@@ -56,8 +57,21 @@ class Merch:
         self.__low()
         self.__commit()
 
+        self.lock = Lock()
+
     def __del__(self):
         self.__cleanup()
+
+    def acquire(self):
+        self.lock.acquire()
+
+    def release(self):
+        self.lock.release()
+
+    def inUse(self):
+        # Trylock
+        return self.lock.locked()
+
 
     def __cleanup(self):
         ''' Clean up all of the GPIO pins '''
