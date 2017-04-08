@@ -42,10 +42,10 @@ app = Flask(__name__)
 merch = Merch()
 
 @app.route('/vend', methods=['POST'])
-def hello_world():
+def vend():
     if request.headers.get('Authorization', '') != token_value:
         abort(401)
-    data = request.json()
+    data = request.json
     items = data['items']
     transaction_id = data['transaction_id']
 

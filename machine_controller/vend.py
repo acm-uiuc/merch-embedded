@@ -110,7 +110,7 @@ class Merch:
         except TypeError:
             raise self.InvalidLocationError
 
-        if num < 1 or num > MAX_NUMBER:
+        if num < 1 or num > self.MAX_NUMBER:
             raise self.InvalidLocationError
 
         self.__vend(letter, str(number))
@@ -125,6 +125,9 @@ class Merch:
         self.__sendKey(letter)
         self.__sendKey(number)
         self.__commit()
+
+        # Wait for vend to complete
+        time.sleep(10)
 
     def __sendKey(self, key):
         # TABLE OF OUTPUTS
