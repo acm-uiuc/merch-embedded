@@ -7,6 +7,5 @@ PARSER = argparse.ArgumentParser()
 PARSER.add_argument("position")
 ARGS = PARSER.parse_args()
 
-location = (ARGS.position[0], int(ARGS.position[1]))
 merch = Merch()
-merch.vend(ARGS.position[0], int(ARGS.position[1]))
+merch.vend(ARGS.position[0].upper(), int(ARGS.position[1]))
