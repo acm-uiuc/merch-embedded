@@ -38,9 +38,9 @@ import time
 
 class Merch:
     '''Merch Hardware Controller'''
-    CLOCK = 26
-    ROW = [21, 20, 16]
-    COL = [19, 13]
+    CLOCK = 6
+    ROW = [13, 19, 26]
+    COL = [16, 5]
     MAX_LETTER = 'F'
     MAX_NUMBER = '0'
 
