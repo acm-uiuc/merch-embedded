@@ -64,9 +64,9 @@ class Merch:
 
         GPIO.setup(self.CLOCK, GPIO.OUT, initial=GPIO.LOW, pull_up_down=GPIO.PUD_DOWN)
         for row in self.ROW:
-            GPIO.setup(row, GPIO.OUT, initial=GPIO.LOW), pull_up_down=GPIO.PUD_DOWN
+            GPIO.setup(row, GPIO.OUT, initial=GPIO.LOW, pull_up_down=GPIO.PUD_DOWN)
         for col in self.COL:
-            GPIO.setup(col, GPIO.OUT, initial=GPIO.LOW), pull_up_down=GPIO.PUD_DOWN
+            GPIO.setup(col, GPIO.OUT, initial=GPIO.LOW, pull_up_down=GPIO.PUD_DOWN)
 
     def __low(self):
         ''' Writes all outputs to low. Does not commit them '''
