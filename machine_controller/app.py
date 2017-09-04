@@ -42,15 +42,45 @@ app = Flask(__name__)
 merch = Merch()
 
 @app.route('/vend', methods=['POST'])
-def hello_world():
-    if request.headers.get('TOKEN', '') != token_value:
+def vend():
+    if request.headers.get('Authorization', '') != token_value:
         abort(401)
-    if 'item' not in request.args:
-        abort(400)
-    item = request.args['item']
-    merch.vend(item[0], int(item[1]))
-    return json.dumps({'success': True}), 200, {'ContentType': 'application/json'}
+    data = request.json
+    items = data['items']
+    transaction_id = data['transaction_id']
+
+
+    statuses = []
+    merch.acquire()
+    for i, item in enumerate(items):
+        try:
+            merch.vend(item[0], int(item[1]))
+            statuses.append({'error': None, 'location': item})
+
+        except Exception as e:
+            # Some error occurred while vending
+            # I'd prefer to catch Merch.VendError's only, but if something else
+            # goes wrong, we still need to let the client know instead of
+            # throwing a 500
+            statuses.append({'error': str(e), 'location': item})
+    merch.release()
+
+    return jsonify(transaction_id=transaction_id, items=statuses)
+
+@app.route('/status', methods=['GET'])
+def status():
+    if request.headers.get('Authorization', '') != token_value:
+        abort(401)
+
+    notready = merch.inUse()
+
+    if(notready):
+        return ('', 503)
+    else:
+        # 200 to indicate success
+        return ('', 200)
+
+
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
-
+    app.run(debug=True, host='0.0.0.0', threaded=True)

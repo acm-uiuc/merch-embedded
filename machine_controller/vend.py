@@ -34,6 +34,7 @@
 # THE SOFTWARE.
 import RPi.GPIO as GPIO
 import time
+from threading import Condition, Lock
 
 
 class Merch:
@@ -42,7 +43,12 @@ class Merch:
     ROW = [13, 19, 26]
     COL = [16, 5]
     MAX_LETTER = 'F'
-    MAX_NUMBER = '0'
+    MAX_NUMBER = 9
+
+    class VendError(Exception):
+        pass
+
+    InvalidLocationError = VendError("Invalid location")
 
     def __init__(self, debug=False):
         self.debug = debug
@@ -51,8 +57,21 @@ class Merch:
         self.__low()
         self.__commit()
 
+        self.lock = Lock()
+
     def __del__(self):
         self.__cleanup()
+
+    def acquire(self):
+        self.lock.acquire()
+
+    def release(self):
+        self.lock.release()
+
+    def inUse(self):
+        # Trylock
+        return self.lock.locked()
+
 
     def __cleanup(self):
         ''' Clean up all of the GPIO pins '''
@@ -93,22 +112,20 @@ class Merch:
         try:
             char = ord(letter)
         except TypeError:
-            raise TypeError('Letter %s does not represent a character' %
-                            str(letter))
+            raise self.InvalidLocationError
 
         # Maybe we should use the actual keypad value?
-        if char < ord('A') or char > ord('Z'):
-            raise ValueError('Invalid Letter: %s' % str(letter))
+        if char < ord('A') or char > ord(self.MAX_LETTER):
+            raise self.InvalidLocationError
 
         num = 0
         try:
             num = int(number)
         except TypeError:
-            raise TypeError('Number %s is not convertible to an integer' %
-                            str(num))
+            raise self.InvalidLocationError
 
-        if num < 0 or num > 10:
-            raise ValueError('Number %d is not in the range 1-10' % num)
+        if num < 1 or num > self.MAX_NUMBER:
+            raise self.InvalidLocationError
 
         self.__vend(letter, str(number))
 
@@ -122,6 +139,9 @@ class Merch:
         self.__sendKey(letter)
         self.__sendKey(number)
         self.__commit()
+
+        # Wait for vend to complete
+        time.sleep(10)
 
     def __sendKey(self, key):
         # TABLE OF OUTPUTS
