@@ -34,7 +34,8 @@
 # THE SOFTWARE.
 import RPi.GPIO as GPIO
 import time
-
+import VL53L0X_rasp_python.python.VL53L0X as VL53L0X
+import numpy as np
 
 class Merch:
     '''Merch Hardware Controller'''
@@ -43,10 +44,10 @@ class Merch:
     COL = [16, 5]
     MAX_LETTER = 'F'
     MAX_NUMBER = '0'
-
+    SENSOR_TIMING = 100
+    
     def __init__(self, debug=False):
         self.debug = debug
-
         self.__setup()
         self.__low()
         self.__commit()
@@ -68,6 +69,13 @@ class Merch:
         for col in self.COL:
             GPIO.setup(col, GPIO.OUT, initial=GPIO.LOW)
 
+    def __setup_sensor():
+        self.cup_sensor = VL53L0X.VL53L0X()
+        self.cup_sensor.start_ranging(VL53L0X.VL530X_BETTER_ACCURACY_MODE)
+        self.cup_sensor_timing = self.cup_sensor.get_timing()
+        if self.cup_sensor_timing < 20000:
+            self.cup_sensor_timing = 20000
+        
     def __low(self):
         ''' Writes all outputs to low. Does not commit them '''
         GPIO.output(self.CLOCK, GPIO.LOW)
@@ -86,6 +94,20 @@ class Merch:
         GPIO.output(self.CLOCK, GPIO.LOW)
         self.__low()
 
+    def __close_door(self):
+        pass
+        
+    def __dectect_in_cup(self):
+        measurements = []
+        for t in range(self.SENSOR_TIMING):
+            measurements.append(self.cup_sensor.get_distance())
+        measurements = np.array(measurements)
+        in_cup = np.mean(measurements)
+        if in_cup > 100:
+            return True
+        else:
+            return False 
+        
     # Wrap the base _vend function, which doesn't check arguments
     def vend(self, letter, number):
         ''' Presses the keypad with letter, number'''
@@ -112,6 +134,27 @@ class Merch:
 
         self.__vend(letter, str(number))
 
+        detected_transfer = False
+        while !detected_transfer:
+            detected_transfer = self.__detect_in_cup()
+            if self.__vend_fail():
+                return False
+            
+        self.__open_door()
+
+        detected_removal = False
+        while !detected_removal:
+            detected_removal = !self.__detect_in_cup()
+            if self.__vend_fail():
+                return False 
+            
+        self.__close_door()
+
+        return True
+
+    def __open_door(self):
+        pass
+        
     def __vend(self, letter, number):
         ''' Base vending function that handles GPIO's
 
@@ -123,6 +166,9 @@ class Merch:
         self.__sendKey(number)
         self.__commit()
 
+    def __vend_fail(self):
+        return False
+        
     def __sendKey(self, key):
         # TABLE OF OUTPUTS
         # ROW = {ROW[0],ROW[1],ROW[2]}
