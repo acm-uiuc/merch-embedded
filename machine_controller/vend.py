@@ -45,22 +45,31 @@ class Merch:
     MAX_LETTER = 'F'
     MAX_NUMBER = '0'
     SENSOR_TIMING = 100
-    
+    SENSOR_TIMING_THRESHOLD = 2
+    SENSOR_THRESHOLD = 100
+    TIMEOUT_THRESHOLD = 15
+    DOOR_PIN = 20
+    LIMIT_X_PIN = 23
+    LIMIT_Y_PIN = 24
+
     def __init__(self, debug=False):
         self.debug = debug
-        self.__setup()
+        self.__setup_gpio()
+        self.__setup_sensor()
         self.__low()
         self.__commit()
 
     def __del__(self):
-        self.__cleanup()
+        self.cleanup()
 
-    def __cleanup(self):
+    def cleanup(self):
         ''' Clean up all of the GPIO pins '''
         GPIO.cleanup()
 
-    def __setup(self):
+    def __setup_gpio(self):
         ''' Setup all of the GPIO pins '''
+        if self.debug:
+            print("Setting up PAD GPIO")
         GPIO.setmode(GPIO.BCM)
 
         GPIO.setup(self.CLOCK, GPIO.OUT, initial=GPIO.LOW)
@@ -68,16 +77,29 @@ class Merch:
             GPIO.setup(row, GPIO.OUT, initial=GPIO.LOW)
         for col in self.COL:
             GPIO.setup(col, GPIO.OUT, initial=GPIO.LOW)
+        
+        if self.debug:
+            print("Setting up DOOR GPIO")
+        GPIO.setup(self.DOOR_PIN, GPIO.OUT, initial=GPIO.HIGH)
+            
+        if self.debug:
+            print("Setting up LIMIT GPIO")
+        GPIO.setup(self.LIMIT_X_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(self.LIMIT_Y_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-    def __setup_sensor():
+    def __setup_sensor(self):
+        if self.debug:
+            print("Setting up Range Finder")
         self.cup_sensor = VL53L0X.VL53L0X()
-        self.cup_sensor.start_ranging(VL53L0X.VL530X_BETTER_ACCURACY_MODE)
+        self.cup_sensor.start_ranging(VL53L0X.VL53L0X_BETTER_ACCURACY_MODE)
         self.cup_sensor_timing = self.cup_sensor.get_timing()
         if self.cup_sensor_timing < 20000:
             self.cup_sensor_timing = 20000
         
     def __low(self):
         ''' Writes all outputs to low. Does not commit them '''
+        if self.debug:
+            print("Set GPIO low")
         GPIO.output(self.CLOCK, GPIO.LOW)
 
         for row in self.ROW:
@@ -85,28 +107,53 @@ class Merch:
         for col in self.COL:
             GPIO.output(col, GPIO.LOW)
 
+        GPIO.output(self.DOOR_PIN, GPIO.HIGH)
+
     def __commit(self):
         '''
         Clocks the flip flop that gates the output
         '''
+        if self.debug:
+            print("Setting up commit GPIO")
         GPIO.output(self.CLOCK, GPIO.HIGH)
         time.sleep(0.5)
         GPIO.output(self.CLOCK, GPIO.LOW)
         self.__low()
 
-    def __close_door(self):
-        pass
-        
-    def __dectect_in_cup(self):
-        measurements = []
+    def __detect_in_cup(self, direction):
+        count = 0
         for t in range(self.SENSOR_TIMING):
-            measurements.append(self.cup_sensor.get_distance())
-        measurements = np.array(measurements)
-        in_cup = np.mean(measurements)
-        if in_cup > 100:
+            dist = self.cup_sensor.get_distance()
+            if self.debug:
+                print(dist)
+            if direction == "awaiting delivery":
+                print("awaiting delivery")
+                if dist < self.SENSOR_THRESHOLD:
+                    count += 1
+            elif direction == "awaiting removal":
+                print("awaiting removal")
+                if dist >= self.SENSOR_THRESHOLD:
+                    count += 1
+            if self.debug:
+                print("count:" + str(count))
+            if count > self.SENSOR_TIMING_THRESHOLD:
+                return True
+        return False 
+
+    def __is_home(self):
+        if not GPIO.input(self.LIMIT_Y_PIN) and not GPIO.input(self.LIMIT_X_PIN):
             return True
-        else:
-            return False 
+        return False
+
+    def notify_machine_is_empty(self):
+        if self.debug:
+            print("Notifying machine that the item is removed")
+        GPIO.output(self.DOOR_PIN, GPIO.HIGH)
+
+    def notify_machine_is_full(self):
+        if self.debug:
+            print("Notifying machine that a item is present")
+        GPIO.output(self.DOOR_PIN, GPIO.LOW)
         
     # Wrap the base _vend function, which doesn't check arguments
     def vend(self, letter, number):
@@ -132,28 +179,46 @@ class Merch:
         if num < 0 or num > 10:
             raise ValueError('Number %d is not in the range 1-10' % num)
 
+        if self.debug:
+            print("Vending {},{}".format(letter,str(number)))
+
         self.__vend(letter, str(number))
 
+        timeout = 0
         detected_transfer = False
-        while !detected_transfer:
-            detected_transfer = self.__detect_in_cup()
+        while not detected_transfer:
+            detected_transfer = self.__detect_in_cup("awaiting delivery")
+            print("Waiting for Cup")
+            print(detected_transfer)
             if self.__vend_fail():
+                self.__low()
                 return False
-            
-        self.__open_door()
+            if timeout >= self.TIMEOUT_THRESHOLD:
+                self.__low()
+                return False
+            timeout += 1
 
+        if self.debug:
+            print("Detected successful transfer")
+        self.notify_machine_is_full()
+        
+        timeout = 0 
         detected_removal = False
-        while !detected_removal:
-            detected_removal = !self.__detect_in_cup()
+        while not detected_removal:
+            detected_removal = self.__detect_in_cup("awaiting removal")
             if self.__vend_fail():
+                self.__low()
                 return False 
-            
-        self.__close_door()
+            if timeout >= self.TIMEOUT_THRESHOLD:
+                self.__low()
+                return False
+
+        if self.debug:
+            print("Detected successful removal")
+
+        self.notify_machine_is_empty()
 
         return True
-
-    def __open_door(self):
-        pass
         
     def __vend(self, letter, number):
         ''' Base vending function that handles GPIO's
@@ -227,9 +292,6 @@ class Merch:
             GPIO.output(self.COL[0], GPIO.HIGH)
         if letter_key[1] & 0b01:
             GPIO.output(self.COL[1], GPIO.HIGH)
-
-        if self.debug:
-            print('Vending', letter_key[0], letter_key[1])
 
         self.__commit()
 

@@ -35,11 +35,14 @@
 from flask import Flask, request, abort, jsonify
 import json
 from vend import Merch
+import signal
+import sys
+
 token_attr, token_value = open('.env', 'r').read().split("=")
 token_value = token_value[:-1]
 
 app = Flask(__name__)
-merch = Merch()
+merch = Merch(debug=True)
 
 @app.route('/vend', methods=['POST'])
 def vend():
@@ -51,6 +54,12 @@ def vend():
     success = merch.vend(item[0], int(item[1]))
     return json.dumps({'success': success}), 200, {'ContentType': 'application/json'}
 
+
+def signal_handler(signal, frame):
+    #merch.cleanup()
+    sys.exit(0)
+
 if __name__ == '__main__':
+    signal.signal(signal.SIGINT, signal_handler)
     app.run(debug=True, host='0.0.0.0')
 
