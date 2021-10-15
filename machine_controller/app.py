@@ -55,7 +55,7 @@ def vend():
     return json.dumps({'success': success}), 200, {'ContentType': 'application/json'}
 
 @app.route('/api', methods=['GET'])
-def vend():
+def api():
     return "MERCH API RUNNING"
 
 def signal_handler(signal, frame):
