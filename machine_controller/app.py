@@ -44,7 +44,7 @@ token_value = token_value[:-1]
 app = Flask(__name__)
 merch = Merch(debug=True)
 
-@app.route('/vend', methods=['POST'])
+@app.route('/api/vend', methods=['POST'])
 def vend():
     if request.headers.get('TOKEN', '') != token_value:
         abort(401)
@@ -54,6 +54,9 @@ def vend():
     success = merch.vend(item[0], int(item[1]))
     return json.dumps({'success': success}), 200, {'ContentType': 'application/json'}
 
+@app.route('/api', methods=['GET'])
+def vend():
+    return "MERCH API RUNNING"
 
 def signal_handler(signal, frame):
     #merch.cleanup()
