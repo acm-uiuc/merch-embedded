@@ -5,7 +5,7 @@ After=network.target
 [Service]
 User=pi
 WorkingDirectory=/home/pi/merch-embedded/machine_controller
-ExecStart=/usr/bin/python /home/pi/merch-embedded/machine_controller/app.py
+ExecStart=/usr/bin/python3 /home/pi/merch-embedded/machine_controller/app.py
 
 [Install]
 WantedBy=multi-user.target
