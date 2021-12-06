@@ -39,7 +39,6 @@ import signal
 import sys
 import requests
 import configparser
-import db
 
 config = configparser.ConfigParser()
 config.read('config.ini')
