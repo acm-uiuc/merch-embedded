@@ -39,6 +39,7 @@ import signal
 import sys
 import requests
 import configparser
+import db
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -58,7 +59,12 @@ def authenticate(route):
     if auth_token[8:] != token:
       abort(401)
     return route()
+  authenticator.__name__ = route.__name__
   return authenticator
+
+@app.route('/api', methods=['GET'])
+def api():
+  return 'MERCH API RUNNING'
 
 @app.route('/api/vend', methods=['POST'])
 @authenticate
@@ -67,11 +73,32 @@ def vend():
     abort(400)
   item = request.args['item']
   success = merch.vend(item[0], int(item[1]))
-  return json.dumps({'success': success}), 200, {'ContentType': 'application/json'}
+  return (json.dumps({'success': success}), 200,
+          {'ContentType': 'application/json'})
 
-@app.route('/api', methods=['GET'])
-def api():
-  return 'MERCH API RUNNING'
+@app.route('/api/new_item', methods=['POST'])
+@authenticate
+def new_item():
+  '''Adds an item to the inventory.
+
+  Query Args:
+    name: The name of the item to add. Required.
+    image_url: The image url of the item to add. Required.
+    price: The price in USD cents of the item to add. Integer. Required.
+    calories: The number of calories in the item. Integer.
+    fat: Grams of fat in the item. Integer.
+    carbs: Grams of carbs in the item. Integer.
+    fiber: Grams of fiber in the item. Integer.
+    sugar: Grams of sugar in the item. Integer.
+    protein: Grams of protein in the item. Integer.
+  '''
+  status = db.insert_item(request.args)
+  if status[0]:
+    return (json.dumps({'success': True}), 200,
+            {'ContentType': 'application/json'})
+  else:
+    return (json.dumps({'error': status[1]}), 400,
+            {'ContentType': 'application/json'})
 
 def json_find(json_data, *args):
   current_layer = json_data
@@ -100,4 +127,5 @@ def signal_handler(signal, frame):
 
 if __name__ == '__main__':
   signal.signal(signal.SIGINT, signal_handler)
+  db.init_db()
   app.run(debug=True, host='0.0.0.0')
