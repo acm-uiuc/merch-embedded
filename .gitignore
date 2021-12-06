@@ -131,3 +131,7 @@ pip-selfcheck.json
 *.s#*
 
 .vscode/*
+
+config.ini
+
+machine_controller/venv/

@@ -1,0 +1,6 @@
+[DEFAULT]
+# Set the secret key
+TOKEN = 0xdeafbeef
+
+# Enter the CoinMarketCap API key
+COINMARKETCAP_KEY = 0xdeafbeef

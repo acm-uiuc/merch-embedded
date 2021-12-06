@@ -37,32 +37,68 @@ import json
 from vend import Merch
 import signal
 import sys
+import requests
+import configparser
+import db
 
-token_attr, token_value = open('.env', 'r').read().split("=")
-token_value = token_value[:-1]
+config = configparser.ConfigParser()
+config.read('config.ini')
+token = config.get('DEFAULT', 'TOKEN', fallback=None)
+coinmarketcap_key = config.get('DEFAULT', 'COINMARKETCAP_KEY', fallback=None)
 
 app = Flask(__name__)
 merch = Merch(debug=True)
 
+def authenticate(route):
+  def authenticator():
+    auth_token = request.headers.get('Authorization')
+    if not auth_token:
+      abort(401)
+    if auth_token[:8] != 'Bearer: ':
+      abort(401)
+    if auth_token[8:] != token:
+      abort(401)
+    return route()
+  return authenticator
+
 @app.route('/api/vend', methods=['POST'])
+@authenticate
 def vend():
-    if request.headers.get('TOKEN', '') != token_value:
-        abort(401)
-    if 'item' not in request.args:
-        abort(400)
-    item = request.args['item']
-    success = merch.vend(item[0], int(item[1]))
-    return json.dumps({'success': success}), 200, {'ContentType': 'application/json'}
+  if 'item' not in request.args:
+    abort(400)
+  item = request.args['item']
+  success = merch.vend(item[0], int(item[1]))
+  return json.dumps({'success': success}), 200, {'ContentType': 'application/json'}
 
 @app.route('/api', methods=['GET'])
 def api():
-    return "MERCH API RUNNING"
+  return 'MERCH API RUNNING'
+
+def json_find(json_data, *args):
+  current_layer = json_data
+  for arg in args:
+    if arg in current_layer:
+      current_layer = current_layer[arg]
+    else:
+      return None
+  return current_layer
+
+def current_sol_price():
+  url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
+  parameters = { 'id': '5426' }
+  headers = { 'X-CMC_PRO_API_KEY': coinmarketcap_key }
+  raw_response = requests.get(url, params = parameters, headers = headers)
+  try:
+    json_response = raw_response.json()
+    price = json_find(json_response, 'data', '5426', 'quote', 'USD', 'price')
+    return price
+  except:
+    return None
 
 def signal_handler(signal, frame):
-    #merch.cleanup()
-    sys.exit(0)
+  #merch.cleanup()
+  sys.exit(0)
 
 if __name__ == '__main__':
-    signal.signal(signal.SIGINT, signal_handler)
-    app.run(debug=True, host='0.0.0.0')
-
+  signal.signal(signal.SIGINT, signal_handler)
+  app.run(debug=True, host='0.0.0.0')
