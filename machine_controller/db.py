@@ -31,10 +31,10 @@ def enforce_natural_number(arg_dict, *args):
         return (False, f'argument {arg} should be a natural number')
   return (True, "")
 
-def arg_dict_sqlize(arg_dict, keys):
+def arg_dict_ensure_keys(arg_dict, keys):
   for key in keys:
-    if arg_dict.get(key) is None:
-      arg_dict[key] = 'NULL'
+    if key not in arg_dict:
+      arg_dict[key] = None
   return arg_dict
 
 @db_action
@@ -51,7 +51,7 @@ def init_db(cur):
                    protein INTEGER
                  )''')
   cur.execute('''CREATE TABLE IF NOT EXISTS locations (
-                   location TEXT NOT NULL,
+                   location TEXT NOT NULL UNIQUE,
                    item INTEGER NOT NULL,
                    quantity INTEGER NOT NULL,
                    FOREIGN KEY(item) REFERENCES items(rowid)
@@ -80,9 +80,9 @@ def insert_item(request_args, cur):
                                'fiber', 'sugar', 'protein')
   if not res[0]:
     return res
-  arg_dict = arg_dict_sqlize(arg_dict, ['name', 'image_url', 'price',
-                                        'calories', 'fat', 'carbs', 'fiber',
-                                        'sugar', 'protein'])
+  arg_dict = arg_dict_ensure_keys(arg_dict, ['name', 'image_url', 'price',
+                                             'calories', 'fat', 'carbs',
+                                             'fiber', 'sugar', 'protein'])
   try:
     cur.execute('''INSERT INTO items VALUES (:name, :image_url, :price,
                                              :calories, :fat, :carbs, :fiber,
@@ -92,4 +92,29 @@ def insert_item(request_args, cur):
       return (False, 'this item is already in the inventory')
     return (False, "")
   return (True, "")
-  
+
+@db_action
+def select_items(cur):
+  '''Returns a list of items.
+  '''
+  cur.execute('''SELECT b.rowid, b.name, b.image_url, b.price, b.calories,
+                        b.fat, b.carbs, b.fiber, b.sugar, b.protein,
+                        IFNULL(SUM(t.quantity), 0),
+                        GROUP_CONCAT(t.location, ", ")
+                 FROM items b
+                 LEFT JOIN locations t ON t.item = b.rowid
+                 GROUP BY b.rowid, b.name, b.image_url, b.price, b.calories,
+                          b.fat, b.carbs, b.fiber, b.sugar, b.protein''')
+  items = cur.fetchall()
+  dict_items = []
+  column_names = ['rowid', 'name', 'image_url', 'price', 'calories', 'fat',
+                  'carbs', 'fiber', 'sugar', 'protein', 'quantity', 'locations']
+  for item in items:
+    item_dict = {}
+    for i in range(0, len(column_names)):
+      if item[i] is not None:
+        item_dict[column_names[i]] = item[i]
+    if 'locations' in item_dict:
+      item_dict['locations'] = item[i].split(', ')
+    dict_items.append(item_dict)
+  return dict_items

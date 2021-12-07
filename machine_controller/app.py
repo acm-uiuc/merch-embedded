@@ -52,12 +52,12 @@ merch = Merch(debug=True)
 def authenticate(route):
   def authenticator():
     auth_token = request.headers.get('Authorization')
-    if not auth_token:
-      abort(401)
-    if auth_token[:8] != 'Bearer: ':
-      abort(401)
-    if auth_token[8:] != token:
-      abort(401)
+    bool_val = not auth_token
+    bool_val = bool_val or auth_token[:8] != 'Bearer: '
+    bool_val = bool_val or auth_token[8:] != token
+    if bool_val:
+      return (json.dumps({'error': 'unauthorized'}), 401,
+              {'ContentType': 'application/json'})
     return route()
   authenticator.__name__ = route.__name__
   return authenticator
@@ -70,11 +70,15 @@ def api():
 @authenticate
 def vend():
   if 'item' not in request.args:
-    abort(400)
+    return (json.dumps({'error': 'missing query parameter "item"'}), 400,
+            {'ContentType': 'application/json'})
   item = request.args['item']
-  success = merch.vend(item[0], int(item[1]))
-  return (json.dumps({'success': success}), 200,
-          {'ContentType': 'application/json'})
+  if merch.vend(item[0], int(item[1])):
+    return (json.dumps({'success': success}), 200,
+            {'ContentType': 'application/json'})
+  else:
+    return (json.dumps({'error': 'failed to vend'}), 500,
+            {'ContentType': 'application/json'})
 
 @app.route('/api/new_item', methods=['POST'])
 @authenticate
@@ -91,6 +95,10 @@ def new_item():
     fiber: Grams of fiber in the item. Integer.
     sugar: Grams of sugar in the item. Integer.
     protein: Grams of protein in the item. Integer.
+
+  Returns
+    JSON with 'success' if the new item was succesfully added, or JSON with
+    'error' if there was a failure when attempting to add the new item.
   '''
   status = db.insert_item(request.args)
   if status[0]:
@@ -99,6 +107,20 @@ def new_item():
   else:
     return (json.dumps({'error': status[1]}), 400,
             {'ContentType': 'application/json'})
+
+@app.route('/api/get_items', methods=['GET'])
+@authenticate
+def get_items():
+  '''Returns all items in the inventory.
+
+  Returns
+    JSON a list of items under the key 'items'. Each item has a 'rowid', 'name',
+    'image_url', 'price', and 'quantity'. It may also optionally have
+    'calories', 'fat', 'carbs', 'fiber', 'sugar', 'protein', and/or 'location'.
+  '''
+  items = db.select_items()
+  return (json.dumps({'items': items}), 200,
+          {'ContentType': 'application/json'})
 
 def json_find(json_data, *args):
   current_layer = json_data
