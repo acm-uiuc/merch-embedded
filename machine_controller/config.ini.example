@@ -2,5 +2,5 @@
 # Set the secret key
 TOKEN = 0xdeafbeef
 
-# Enter the CoinMarketCap API key
-COINMARKETCAP_KEY = 0xdeafbeef
+# Dev Mode (vending is disabled in dev mode)
+DEV_MODE = no

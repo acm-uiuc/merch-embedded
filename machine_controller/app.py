@@ -34,7 +34,6 @@
 # THE SOFTWARE.
 from flask import Flask, request, abort, jsonify
 import json
-from vend import Merch
 import signal
 import sys
 import requests
@@ -45,9 +44,13 @@ config = configparser.ConfigParser()
 config.read('config.ini')
 token = config.get('DEFAULT', 'TOKEN', fallback=None)
 coinmarketcap_key = config.get('DEFAULT', 'COINMARKETCAP_KEY', fallback=None)
+dev_mode = config.get('DEFAULT', 'DEV_MODE', fallback='no')
 
 app = Flask(__name__)
-merch = Merch(debug=True)
+
+if dev_mode == 'no':
+  from vend import Merch
+  merch = Merch(debug=True)
 
 def authenticate(route):
   def authenticator():
@@ -83,7 +86,7 @@ def vend():
 @app.route('/api/new_item', methods=['POST'])
 @authenticate
 def new_item():
-  '''Adds an item to the inventory.
+  '''Adds an item to the list of items.
 
   Query Args:
     name: The name of the item to add. Required.
@@ -121,27 +124,6 @@ def get_items():
   items = db.select_items()
   return (json.dumps({'items': items}), 200,
           {'ContentType': 'application/json'})
-
-def json_find(json_data, *args):
-  current_layer = json_data
-  for arg in args:
-    if arg in current_layer:
-      current_layer = current_layer[arg]
-    else:
-      return None
-  return current_layer
-
-def current_sol_price():
-  url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
-  parameters = { 'id': '5426' }
-  headers = { 'X-CMC_PRO_API_KEY': coinmarketcap_key }
-  raw_response = requests.get(url, params = parameters, headers = headers)
-  try:
-    json_response = raw_response.json()
-    price = json_find(json_response, 'data', '5426', 'quote', 'USD', 'price')
-    return price
-  except:
-    return None
 
 def signal_handler(signal, frame):
   #merch.cleanup()

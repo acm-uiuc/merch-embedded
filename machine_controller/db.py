@@ -112,9 +112,15 @@ def select_items(cur):
   for item in items:
     item_dict = {}
     for i in range(0, len(column_names)):
-      if item[i] is not None:
-        item_dict[column_names[i]] = item[i]
-    if 'locations' in item_dict:
+      item_dict[column_names[i]] = item[i]
+    if item_dict['locations'] is not None:
       item_dict['locations'] = item[i].split(', ')
+      item_dict['locations'].sort()
     dict_items.append(item_dict)
+  def sortByLoc(item):
+    if item['locations'] is not None:
+      return item['locations'][0]
+    else:
+      return ''
+  dict_items.sort(key=sortByLoc)
   return dict_items
