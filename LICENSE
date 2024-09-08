@@ -1,8 +1,12 @@
 University of Illinois/NCSA Open Source License 
 
-Copyright (c) 2017 ACM@UIUC. All rights reserved. 
+Copyright (c) 2017-2024 ACM@UIUC. All rights reserved. 
 
-Developed by: SIGBot
+2017-2023: Developed by: SIGBot
+              ACM@UIUC 
+              https://acm.illinois.edu
+
+2024: Developed by: ACM@UIUC Infrastructure Team
               ACM@UIUC 
               https://acm.illinois.edu
                   
@@ -21,9 +25,9 @@ subject to the following conditions:
   notice, this list of conditions and the following disclaimers in the 
   documentation and/or other materials provided with the distribution.
 
-* Neither the names of ACM@UIUC, SIGBot nor the names of its 
-  contributors may be used to endorse or promote products derived from
-  this Software without specific prior written permission.
+* Neither the names of ACM@UIUC, SIGBot, ACM@UIUC Infrastructure Team, nor 
+  the names of its contributors may be used to endorse or promote products 
+  derived from this Software without specific prior written permission.
   
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS 
 OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
