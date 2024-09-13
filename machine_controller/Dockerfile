@@ -1,7 +1,7 @@
 FROM python:3.9-slim-bookworm
 WORKDIR /srv/acm/vending/machine_controller/
 RUN apt-get update -y
-RUN apt-get install -y build-essential python3-dev cmake
+RUN apt-get install -y build-essential cmake
 RUN pip install RPi.GPIO
 COPY requirements.txt requirements.txt
 RUN pip install --upgrade pip
