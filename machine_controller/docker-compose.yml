@@ -9,10 +9,7 @@ services:
       - "443:443"
       - "443:443/udp"
     volumes:
-      - $PWD/config/Caddyfile:/etc/caddy/Caddyfile
-      - $PWD/certs/ca.crt:/etc/caddy/ca.crt
-      - $PWD/certs/server.key:/etc/caddy/server.key
-      - $PWD/certs/server.crt:/etc/caddy/server.crt
+      - $PWD/config:/etc/caddy:ro
     depends_on:
       - machine_controller_api
     environment:
