@@ -3,27 +3,26 @@ from flask import Flask, request
 import json
 import signal
 import sys
-import configparser
-
 import requests
+import os
 from vend import Merch
 from urllib.parse import urljoin
 
-config = configparser.ConfigParser()
-config.read("config.ini")
-token = config.get("DEFAULT", "TOKEN", fallback=None)
-coinmarketcap_key = config.get("DEFAULT", "COINMARKETCAP_KEY", fallback=None)
-dev_mode = config.get("DEFAULT", "DEV_MODE", fallback="no")
+config = {
+    "CORE_API_URL": os.environ.get(
+        "CORE_API_URL", "https://infra-core-api.aws.qa.acmuiuc.org/api/v1/vending"
+    )
+}
 
 app = Flask(__name__)
 
 
-@app.route("/api", methods=["GET"])
+@app.route("/api/v1/healthz", methods=["GET"])
 def api():
-    return "MERCH API RUNNING"
+    return "UP"
 
 
-@app.route("/api/vend", methods=["POST"])
+@app.route("/api/v1/vend", methods=["POST"])
 def vend():
     try:
         merch = Merch()

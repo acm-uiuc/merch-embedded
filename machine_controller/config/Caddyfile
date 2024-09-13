@@ -1,0 +1,9 @@
+localhost {
+    reverse_proxy http://machine_controller_api:5000
+    tls /etc/caddy/server.crt /etc/caddy/server.key {
+        client_auth {
+            mode require_and_verify
+            trusted_ca_cert_file /etc/caddy/ca.crt
+        }
+    }
+}

@@ -33,11 +33,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS WITH
 # THE SOFTWARE.
 
+
+on_rpi = False
 try:
     import RPi.GPIO as GPIO
     import VL53L0X_rasp_python.python.VL53L0X as VL53L0X
-except ImportError:
-    print("Could not import raspi-specific libs")
+    on_rpi = True
+except Exception:
+    print("Not running on an RPi, vending disabled!")
+    on_rpi = False
 import time
 import numpy as np
 

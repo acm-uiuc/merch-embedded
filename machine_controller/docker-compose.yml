@@ -1,0 +1,31 @@
+services:
+  caddy:
+    image: caddy:2.8
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - $PWD/config/Caddyfile:/etc/caddy/Caddyfile
+      - $PWD/ca.crt:/etc/caddy/ca.crt
+      - $PWD/server.key:/etc/caddy/server.key
+      - $PWD/server.crt:/etc/caddy/server.crt
+    depends_on:
+      - machine_controller_api
+    environment:
+      - PUBLIC_HOST=siebl-1106-vending.acm.illinois.edu
+  machine_controller_api:
+    hostname: machine_controller_api
+    build:
+      context: .
+      platforms:
+        - "linux/arm64"
+    environment:
+      - CORE_API_URL="https://infra-core-api.aws.qa.acmuiuc.org/api/v1/vending"
+    stop_signal: SIGINT
+    ports:
+      - '5000'
+    privileged: true

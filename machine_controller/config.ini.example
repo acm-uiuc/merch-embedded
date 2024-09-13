@@ -1,8 +1,0 @@
-[DEFAULT]
-# Set the secret key
-TOKEN = 0xdeafbeef
-
-# Dev Mode (vending is disabled in dev mode)
-DEV_MODE = no
-
-CORE_API_URL = "https://infra-core-api.aws.qa.acmuiuc.org/api/v1/vending"
