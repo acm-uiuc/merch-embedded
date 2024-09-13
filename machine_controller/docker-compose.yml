@@ -21,8 +21,6 @@ services:
     hostname: machine_controller_api
     build:
       context: .
-      platforms:
-        - "linux/arm64"
     environment:
       - CORE_API_URL="https://infra-core-api.aws.qa.acmuiuc.org/api/v1/vending"
     stop_signal: SIGINT
