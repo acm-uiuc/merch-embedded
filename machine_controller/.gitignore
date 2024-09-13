@@ -4,3 +4,4 @@ server.crt
 server.key
 client.crt
 client.key
+!prod/ca.crt
