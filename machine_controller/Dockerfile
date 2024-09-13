@@ -1,4 +1,4 @@
-FROM python:3.9.20-bookworm
+FROM python:3.9-slim-bookworm
 WORKDIR /srv/acm/vending/machine_controller/
 RUN apt-get update -y
 RUN apt-get install -y build-essential python3-dev bash
