@@ -18,6 +18,9 @@ services:
     hostname: machine_controller_api
     build:
       context: .
+      dockerfile: Dockerfile
+      cache_from:
+        - ghcr.io/acm-uiuc/merch-embedded:latest
     environment:
       - CORE_API_URL="https://infra-core-api.aws.qa.acmuiuc.org/api/v1/vending"
     stop_signal: SIGINT
