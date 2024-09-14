@@ -35,12 +35,14 @@
 
 
 on_rpi = False
+import traceback
 try:
     import RPi.GPIO as GPIO
     import VL53L0X_rasp_python.python.VL53L0X as VL53L0X
     on_rpi = True
 except Exception:
     print("Not running on an RPi, vending disabled!")
+    print(traceback.format_exc(), flush=True)
     on_rpi = False
 import time
 import numpy as np
