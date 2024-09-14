@@ -1,5 +1,5 @@
 localhost {
-    reverse_proxy http://machine_controller_api:5000
+    reverse_proxy http://vending_machine_controller_api:5000
     tls /etc/caddy/server.crt /etc/caddy/server.key {
         client_auth {
             mode require_and_verify

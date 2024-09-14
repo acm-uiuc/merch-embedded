@@ -12,10 +12,9 @@ services:
       - $PWD/config:/etc/caddy:ro
     depends_on:
       - machine_controller_api
-    environment:
-      - PUBLIC_HOST=siebl-1106-vending.acm.illinois.edu
   machine_controller_api:
-    hostname: machine_controller_api
+    restart: unless-stopped
+    hostname: vending_machine_controller_api
     build:
       context: .
       dockerfile: Dockerfile
