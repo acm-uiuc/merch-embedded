@@ -1,6 +1,7 @@
 vend_merch
 README.md
 create_*.sh
+build_*.sh
 docker-compose.yml
 Dockerfile
 config/
