@@ -55,7 +55,7 @@ def vend():
                     {"ContentType": "application/json"},
                 )
     except Exception:
-        print(f"Failed to vend: {traceback.format_exc()}")
+        print(f"Failed to vend: {traceback.format_exc()}", flush=True)
         return (
             json.dumps({"error": "failed to vend"}),
             500,
